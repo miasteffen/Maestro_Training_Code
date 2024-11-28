@@ -13,26 +13,19 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
-import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.simulation.BatterySim;
-import edu.wpi.first.wpilibj.simulation.RoboRioSim;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.lib.team2930.AllianceFlipUtil;
 import frc.lib.team2930.ExecutionTiming;
 import frc.lib.team2930.LoggerEntry;
 import frc.lib.team2930.LoggerGroup;
 import frc.lib.team2930.commands.RunsWhenDisabledInstantCommand;
-import frc.robot.autonomous.AutosManager.Auto;
 import org.littletonrobotics.junction.LogFileUtil;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
@@ -53,9 +46,6 @@ public class Robot extends LoggedRobot {
   private static final LoggerGroup logGroupActiveCommands = LoggerGroup.build("ActiveCommands");
 
   private static final LoggerGroup logGroupAuto = LoggerGroup.build("Auto");
-  private static final LoggerEntry.Text logCurrentChooserValue =
-      logGroupAuto.buildString("currentChooserValue");
-  private static final LoggerEntry.Text logSelectedAuto = logGroupAuto.buildString("SelectedAuto");
 
   private static final LoggerGroup logGroupSimulatedRobot = LoggerGroup.build("SimulatedRobot");
   private static final LoggerEntry.DecimalArray logCurrentDraws =
@@ -65,16 +55,10 @@ public class Robot extends LoggedRobot {
 
   private RobotContainer robotContainer;
 
-  private LoggedDashboardChooser<String> autonomousChooser = null;
-  private Auto selectedAuto;
-  private String selectedAutoName;
   private Command autoCommand;
-  private Pose2d selectedInitialPose;
-  private Pose2d desiredInitialPose;
   private boolean hasEnteredTeleAtSomePoint = false;
   private boolean hasEnteredAutoAtSomePoint = false;
 
-  private boolean isAutonomousPrev = false;
   private boolean teleopPrepped = false;
 
   // Enables power distribution logging
@@ -150,7 +134,6 @@ public class Robot extends LoggedRobot {
         command -> logGroupActiveCommands.buildBoolean(command.getName()).info(false));
     commandScheduler.onCommandFinish(
         command -> logGroupActiveCommands.buildBoolean(command.getName()).info(false));
-    robotContainer.resetSubsystems();
 
     // Dashboard buttons to turn off/on cameras
     SmartDashboard.putData(
@@ -179,61 +162,17 @@ public class Robot extends LoggedRobot {
     }
 
     robotContainer.applyToDrivetrain();
-    robotContainer.updateVisualization();
-    robotContainer.updateLedGamepieceState();
 
     LoggerGroup.publish();
   }
 
   /** This function is called once when the robot is disabled. */
   @Override
-  public void disabledInit() {
-    robotContainer.enterDisabled();
-  }
+  public void disabledInit() {}
 
   /** This function is called periodically when disabled. */
   @Override
   public void disabledPeriodic() {
-    if (autonomousChooser == null) {
-      autonomousChooser = robotContainer.getAutonomousChooser();
-    }
-
-    var autoName = autonomousChooser.get();
-    if (autoName != null && !autoName.equals(selectedAutoName)) {
-      Pose2d initialPose;
-
-      selectedAuto = robotContainer.getAutoSupplierForString(autoName).get();
-      if (selectedAuto != null) {
-        initialPose = selectedAuto.initPose();
-        if (initialPose != null) {
-          initialPose = AllianceFlipUtil.flipPoseForAlliance(initialPose);
-        }
-
-        logCurrentChooserValue.info(autoName);
-        logSelectedAuto.info(selectedAuto.name());
-      } else {
-        initialPose = null;
-      }
-
-      desiredInitialPose = initialPose;
-      selectedAutoName = autoName;
-    }
-
-    if (desiredInitialPose != null && !desiredInitialPose.equals(selectedInitialPose)) {
-      boolean shouldResetPose = false;
-      if (DriverStation.isFMSAttached()) {
-        if (!hasEnteredTeleAtSomePoint) {
-          shouldResetPose = true;
-        }
-      } else {
-        shouldResetPose = true;
-      }
-
-      if (shouldResetPose) {
-        selectedInitialPose = desiredInitialPose;
-        robotContainer.setPose(selectedInitialPose);
-      }
-    }
 
     // set gyro zero based on vision during pre match disable. This allows for imprecise robot
     // placement on the field to be fixed by vision
@@ -246,21 +185,12 @@ public class Robot extends LoggedRobot {
     } else {
       robotContainer.matchRawOdometryToPoseEstimatorValue();
     }
-
-    logBreakModeButton.info(robotContainer.breakModeButton.get());
-    logHomeSensorsButton.info(robotContainer.homeSensorsButton.get());
   }
 
   /** This autonomous runs the autonomous command selected by your {@link RobotContainer} class. */
   @Override
   public void autonomousInit() {
     robotContainer.enterAutonomous();
-
-    // schedule the autonomous command (example)
-    if (selectedAuto != null) {
-      autoCommand = selectedAuto.command();
-      autoCommand.schedule();
-    }
   }
 
   /** This function is called periodically during autonomous. */
@@ -301,15 +231,7 @@ public class Robot extends LoggedRobot {
 
   /** This function is called periodically whilst in simulation. */
   @Override
-  public void simulationPeriodic() {
-
-    // SimBattery estimates loaded battery voltages
-    RoboRioSim.setVInVoltage(
-        BatterySim.calculateDefaultBatteryLoadedVoltage(robotContainer.getCurrentDraws()));
-
-    logCurrentDraws.info(robotContainer.getCurrentDraws());
-    logBatteryVoltage.info(RobotController.getBatteryVoltage());
-  }
+  public void simulationPeriodic() {}
 
   private void prepForTeleop() {
     // This makes sure that the autonomous stops running when

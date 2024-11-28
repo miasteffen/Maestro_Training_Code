@@ -38,7 +38,6 @@ import frc.robot.configs.RobotConfig;
 import frc.robot.subsystems.swerve.gyro.GyroIO;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 public class Drivetrain extends SubsystemBase {
   public static final String ROOT_TABLE = "Drivetrain";
@@ -149,16 +148,13 @@ public class Drivetrain extends SubsystemBase {
   public static final AutoLock odometryLock = new AutoLock("odometry", 100);
 
   public static final TunableNumberGroup group = new TunableNumberGroup("RobotConfig");
-  public static final LoggedTunableNumber driveMotorAccelerationAuto =
-      group.build("SwerveDRIVEAccelerationAuto", 1000);
-  public static final LoggedTunableNumber driveMotorAccelerationTele =
+  public static final LoggedTunableNumber driveMotorAcceleration =
       group.build("SwerveDRIVEAccelerationTele", 1000);
 
   private boolean switchGyro;
   private Boolean useSecondGyro;
 
   private final RobotConfig config;
-  private final Supplier<Boolean> isAutonomous;
   private final boolean isCANFD;
 
   private final GyroIO gyroIO;
@@ -186,16 +182,11 @@ public class Drivetrain extends SubsystemBase {
   private Pose2d prevVel = Constants.zeroPose2d;
 
   public Drivetrain(
-      RobotConfig config,
-      GyroIO gyroIO,
-      GyroIO gyroIO2,
-      SwerveModules swerveModules,
-      Supplier<Boolean> isAutonomous) {
+      RobotConfig config, GyroIO gyroIO, GyroIO gyroIO2, SwerveModules swerveModules) {
     this.config = config;
     this.modules = swerveModules;
     this.gyroIO = gyroIO;
     this.gyroIO2 = gyroIO2;
-    this.isAutonomous = isAutonomous;
 
     String canBusName = config.getCANBusName();
     if (canBusName != null) {
@@ -528,14 +519,8 @@ public class Drivetrain extends SubsystemBase {
     // Send setpoints to modules
     // The module returns the optimized state, useful for logging
 
-    double driveMotorAcceleration;
-    if (isAutonomous.get()) {
-      driveMotorAcceleration = driveMotorAccelerationAuto.get();
-    } else {
-      driveMotorAcceleration = driveMotorAccelerationTele.get();
-    }
-
-    var optimizedSetpointStates = modules.runSetpoints(setpointStates, driveMotorAcceleration);
+    var optimizedSetpointStates =
+        modules.runSetpoints(setpointStates, driveMotorAcceleration.get());
 
     // Log setpoint states
     logSwerveStatesSetpoints.info(setpointStates);
