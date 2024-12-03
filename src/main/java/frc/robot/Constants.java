@@ -124,6 +124,10 @@ public final class Constants {
     }
   }
 
+  public static class EndEffectorConstants {
+    public static final double GEAR_RATIO = 1.33;
+  }
+
   public static class CanIDs {
     // READ ME: CAN ID's THAT ARE NOT VALID TO USE
     // 1, 11, 21, 31
