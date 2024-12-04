@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems.endEffector;
 
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -18,6 +19,11 @@ public class EndEffector extends SubsystemBase {
 
   private final VoltageOut openLoopControl = new VoltageOut(0).withEnableFOC(true);
 
+  private final StatusSignal<Double> deviceTemp;
+  private final StatusSignal<Double> appliedVolts;
+  private final StatusSignal<Double> currentAmps;
+  private final StatusSignal<Double> velocityRPS;
+
   /** Creates a new EndEffector. */
   public EndEffector() {
     TalonFXConfiguration config = new TalonFXConfiguration();
@@ -31,6 +37,11 @@ public class EndEffector extends SubsystemBase {
     config.Feedback.SensorToMechanismRatio = Constants.EndEffectorConstants.GEAR_RATIO;
 
     motor.getConfigurator().apply(config);
+
+    deviceTemp = motor.getDeviceTemp();
+    appliedVolts = motor.getMotorVoltage();
+    currentAmps = motor.getStatorCurrent();
+    velocityRPS = motor.getVelocity();
   }
 
   @Override
