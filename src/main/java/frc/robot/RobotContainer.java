@@ -26,7 +26,9 @@ import frc.lib.team2930.commands.RunsWhenDisabledInstantCommand;
 import frc.robot.Constants.RobotMode.Mode;
 import frc.robot.Constants.RobotMode.RobotType;
 import frc.robot.commands.drive.DrivetrainDefaultTeleopDrive;
+import frc.robot.commands.endEffector.EndEffectorPercentOut;
 import frc.robot.configs.SimulatorRobotConfig;
+import frc.robot.subsystems.endEffector.EndEffector;
 import frc.robot.subsystems.swerve.Drivetrain;
 import frc.robot.subsystems.swerve.DrivetrainWrapper;
 import frc.robot.subsystems.swerve.gyro.GyroIO;
@@ -48,6 +50,9 @@ public class RobotContainer {
 
   private final Drivetrain drivetrain;
   private final DrivetrainWrapper drivetrainWrapper;
+
+  private final EndEffector endEffector;
+
   public final AprilTagFieldLayout aprilTagLayout;
   public final Vision vision;
 
@@ -78,6 +83,8 @@ public class RobotContainer {
               drivetrain::getRotationGyroOnly,
               drivetrain::addVisionEstimate,
               config.getReplayVisionModules());
+      
+      endEffector = new EndEffector();
     } else { // REAL and SIM robots HERE
       switch (robotType) {
         case ROBOT_SIMBOT_REAL_CAMERAS:
@@ -97,6 +104,8 @@ public class RobotContainer {
                     drivetrain::getRotationGyroOnly,
                     drivetrain::addVisionEstimate,
                     config.getVisionModuleObjects());
+
+          endEffector = new EndEffector();
 
           } else {
             VisionModuleConfiguration[] visionModules = {
@@ -119,6 +128,8 @@ public class RobotContainer {
                     drivetrain::getRotationGyroOnly,
                     drivetrain::addVisionEstimate,
                     visionModules);
+            
+            endEffector = new EndEffector();
           }
           break;
 
@@ -139,6 +150,8 @@ public class RobotContainer {
                   drivetrain::getRotationGyroOnly,
                   drivetrain::addVisionEstimate,
                   config.getVisionModuleObjects());
+          
+          endEffector = new EndEffector();
           break;
 
         default:
@@ -155,6 +168,8 @@ public class RobotContainer {
                   drivetrain::getRotationGyroOnly,
                   drivetrain::addVisionEstimate,
                   config.getReplayVisionModules());
+
+          endEffector = new EndEffector();
           break;
       }
     }
@@ -191,7 +206,8 @@ public class RobotContainer {
                       new Pose2d(pose.getX(), pose.getY(), Constants.zeroRotation2d));
                 },
                 drivetrain));
-
+    
+    driverController.b().whileTrue(new EndEffectorPercentOut(endEffector));
     // ---------- OPERATOR CONTROLS -----------
 
     // Add Reset and Reboot buttons to SmartDashboard
