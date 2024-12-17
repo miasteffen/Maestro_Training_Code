@@ -11,6 +11,12 @@ public class EndEffector extends SubsystemBase {
   private final TalonFX motor = new TalonFX(Constants.CandIDs.END_EFFECTOR_CAN_ID);
   
   private final VoltageOut openLoopControl = new VoltageOut(0).withEnableFOC(true);
+ 
+ private final StatusSignal<Double> deviceTemp;
+ private final StatusSignal<Double> appliedVolts;
+ private final StatusSignal<Double> currentAmps;
+ private final StatusSignal<Double> velocityRPS;
+
   /** Creates a new EndEffector. */
   public EndEffector() {
     TalonFXConfiguration config = new TalonFXConfiguration();
@@ -24,7 +30,13 @@ public class EndEffector extends SubsystemBase {
     config.Feedback.SensorToMechanismRatio = Constants.EndEffectorConstants.GEAR_RATIO;
     
     motor.getConfigurator().apply(config);_
+
+    deviceTemp = motor.getDeviceTemp();
+    appliedVolts = motor.getMotorVoltage();
+    currentAmps = motor.getStatorCurrent();
+    velocityRPS = motor.getVelocity();
   }
+
 
   public void setVoltage(double volt){
       motor.setControl(openLoopControl.withOutput(volts));
